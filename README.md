@@ -129,7 +129,7 @@ settings:
 
 你可以通过配置文件中的 `settings.basic.interfaces` 指定网卡，也可以在将该配置留空的情况下使用 `--interface` 指定网卡。
 
-**多网卡多账号支持**：如果你需要在多网卡拨号模式下为不同网卡分别拨不同的账号，可以在配置文件的 `settings.interfaces_config` 中为特定的网卡名称添加独立的 `form` 和 `meta` 参数。
+**多网卡多账号支持**：如果你需要在多网卡拨号模式下为不同网卡分别拨不同的账号，可以在配置文件的 `settings.interfaces_config` 中为特定的网卡名称添加独立的 `form` 参数。
 
 ## :anchor: Docker / Kubernetes
 
