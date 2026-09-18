@@ -58,6 +58,8 @@ func Login(conf Conf) error {
 		err := Single(SingleConf{
 			Conf: conf,
 			Eth:  eth,
+			Form: config.Form,
+			Meta: config.Meta,
 		})
 		if err != nil {
 			logger.Errorln("登录出错: ", err)
@@ -95,9 +97,33 @@ func Interfaces(conf Conf) error {
 	var errCount int
 	for i, eth := range interfaces {
 		logger.Infoln("使用网卡: ", eth.Name)
+
+		formVal := *config.Form
+		form := &formVal
+
+		if ifaceConf, ok := config.Settings.InterfacesConfig[eth.Name]; ok {
+			if ifaceConf.Form != nil {
+				if ifaceConf.Form.Username != nil {
+					form.Username = *ifaceConf.Form.Username
+				}
+				if ifaceConf.Form.Password != nil {
+					form.Password = *ifaceConf.Form.Password
+				}
+				if ifaceConf.Form.UserType != nil {
+					form.UserType = *ifaceConf.Form.UserType
+				}
+				if ifaceConf.Form.Domain != nil {
+					form.Domain = *ifaceConf.Form.Domain
+				}
+				logger.Debugf("网卡 %s 使用专属账号配置", eth.Name)
+			}
+		}
+
 		if err := Single(SingleConf{
 			Conf: conf,
 			Eth:  &eth,
+			Form: form,
+			Meta: config.Meta,
 		}); err != nil {
 			logger.Errorf("网卡 %s 登录出错: %v", eth.Name, err)
 			errCount++
@@ -114,7 +140,9 @@ func Interfaces(conf Conf) error {
 
 type SingleConf struct {
 	Conf
-	Eth *tools.Eth
+	Eth  *tools.Eth
+	Form *srun.LoginForm
+	Meta *srun.LoginMeta
 }
 
 func Single(conf SingleConf) error {
@@ -135,8 +163,8 @@ func doLogin(conf SingleConf) error {
 		Logger: logger,
 		Https:  config.Settings.Basic.Https,
 		LoginInfo: srun.LoginInfo{
-			Form: *config.Form,
-			Meta: *config.Meta,
+			Form: *conf.Form,
+			Meta: *conf.Meta,
 		},
 		Client:       httpClient,
 		CustomHeader: config.Settings.CustomHeader,
@@ -205,7 +233,7 @@ func doLogin(conf SingleConf) error {
 
 	var clientIp, loginIp string
 
-	isClientIpRequired := !config.Meta.DoubleStack || config.Settings.DDNS.Enable
+	isClientIpRequired := !conf.Meta.DoubleStack || config.Settings.DDNS.Enable
 	online, ip, err := srunClient.LoginStatus()
 	if err != nil {
 		if online == nil {
@@ -221,7 +249,7 @@ func doLogin(conf SingleConf) error {
 		clientIp = *ip
 	}
 
-	if config.Meta.DoubleStack {
+	if conf.Meta.DoubleStack {
 		logger.Debugln("使用双栈网络时认证 ip 为空")
 	} else {
 		loginIp = clientIp
